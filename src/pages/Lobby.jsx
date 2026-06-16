@@ -25,15 +25,16 @@ const STAKES = [
 ]
 
 const PLAYER_SIZES = [
-  { label: '10',  value: 10 },
-  { label: '20',  value: 20 },
-  { label: '50',  value: 50 },
+  { label: '1v1', value: 2,  desc: '2 players' },
+  { label: '10',  value: 10, desc: '10 players' },
+  { label: '20',  value: 20, desc: '20 players' },
+  { label: '50',  value: 50, desc: '50 players' },
 ]
 
 const MODES = [
-  { id: '1v1',      label: '1 vs 1'   },
-  { id: 'group',    label: 'Group'    },
-  { id: 'practice', label: 'Practice' },
+  { id: '1v1',      label: '1 vs 1'    },
+  { id: 'group',    label: 'Group'     },
+  { id: 'practice', label: 'Practice'  },
 ]
 
 export default function Lobby() {
@@ -44,14 +45,16 @@ export default function Lobby() {
   const [mode,        setMode]        = useState(location.state?.mode === 'practice' ? 'practice' : '1v1')
   const [category,    setCategory]    = useState(location.state?.category || 'Sports')
   const [stakeNaira,  setStakeNaira]  = useState(500)
-  const [playerCount, setPlayerCount] = useState(10)
+  const [playerCount, setPlayerCount] = useState(2)
   const [loading,     setLoading]     = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
 
-  const balanceNaira  = (user?.balance || 0) / 100
+  const balanceNaira = (user?.balance || 0) / 100
   const actualPlayers = mode === '1v1' ? 2 : playerCount
-  const prize         = Math.round(stakeNaira * actualPlayers * 0.9)
+  const prizePool    = stakeNaira * actualPlayers
+  const prize        = Math.round(prizePool * 0.9)
 
+  // ── FIND MATCH ─────────────────────────────────────────
   const findMatch = async () => {
     if (balanceNaira < stakeNaira) {
       toast.error('Insufficient balance')
@@ -66,9 +69,7 @@ export default function Lobby() {
         playerCount: actualPlayers,
       })
       toast.success('Match found!')
-      navigate(`/game/${data.roomId}`, {
-        state: { stakeNaira, category, playerCount: actualPlayers }
-      })
+      navigate(`/game/${data.roomId}`, { state: { stakeNaira, category, playerCount: actualPlayers } })
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to find match')
     } finally {
@@ -76,6 +77,7 @@ export default function Lobby() {
     }
   }
 
+  // ── START PRACTICE ─────────────────────────────────────
   const startPractice = () => {
     navigate(`/game/practice-${Date.now()}`, {
       state: { category, stakeNaira: 0, playerCount: 1, isPractice: true }
@@ -90,7 +92,7 @@ export default function Lobby() {
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    transform: active ? 'scale(1.03)' : 'none',
+    transform: active ? 'scale(1.03)' : 'scale(1)',
     boxShadow: active ? '0 0 12px var(--indigo-dim)' : 'none',
   })
 
@@ -100,9 +102,7 @@ export default function Lobby() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="back-btn" onClick={() => navigate('/dashboard')}>←</button>
           <div>
-            <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 700 }}>
-              Quiz Lobby
-            </div>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 700 }}>Quiz Lobby</div>
             <div style={{ fontSize: 11, color: 'var(--muted2)' }}>Set up your match</div>
           </div>
         </div>
@@ -116,6 +116,7 @@ export default function Lobby() {
             key={m.id}
             onClick={() => {
               setMode(m.id)
+              if (m.id === '1v1') setPlayerCount(2)
               if (m.id === 'group') setPlayerCount(10)
             }}
             style={{
@@ -131,20 +132,16 @@ export default function Lobby() {
         ))}
       </div>
 
-      {/* PRACTICE */}
+      {/* ── PRACTICE MODE ── */}
       {mode === 'practice' && (
-        <div style={{ padding: 20, paddingBottom: 100 }}>
-          <div style={{
-            background: 'var(--indigo-dim)', border: '1px solid var(--indigo-mid)',
-            borderRadius: 12, padding: '14px 16px', marginBottom: 24,
-          }}>
+        <div className="page-in" style={{ padding: 20, paddingBottom: 100 }}>
+          <div style={{ background: 'var(--indigo-dim)', border: '1px solid var(--indigo-mid)', borderRadius: 12, padding: '14px 16px', marginBottom: 24 }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 13, fontWeight: 700, color: 'var(--indigo-lt)', marginBottom: 4 }}>
               Practice mode — no stake required
             </div>
             <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
-              Play solo against the clock. No entry fee, no prize money.
-              Free users get 5 sessions per day.
-              {user?.is_vip ? ' VIP members get unlimited practice.' : ''}
+              Play against the clock. No entry fee, no prize. Free users get 5 sessions per day.
+              {user?.is_vip ? ' You have unlimited practice as a VIP member.' : ''}
             </div>
           </div>
 
@@ -155,9 +152,7 @@ export default function Lobby() {
             {CATEGORIES.map(c => (
               <div key={c.name} onClick={() => setCategory(c.name)} style={selCard(category === c.name)}>
                 <div style={{ fontSize: 24, marginBottom: 6 }}>{c.emoji}</div>
-                <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: 'var(--text2)' }}>
-                  {c.name}
-                </div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: 'var(--text2)' }}>{c.name}</div>
               </div>
             ))}
           </div>
@@ -168,28 +163,24 @@ export default function Lobby() {
         </div>
       )}
 
-      {/* 1v1 / GROUP */}
+      {/* ── 1v1 / GROUP MODE ── */}
       {mode !== 'practice' && (
         <>
-          <div style={{ padding: '20px 20px 120px' }}>
+          <div className="page-in" style={{ padding: '20px 20px 0' }}>
 
-            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-              Category
-            </div>
+            {/* CATEGORY */}
+            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Category</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
               {CATEGORIES.map(c => (
                 <div key={c.name} onClick={() => setCategory(c.name)} style={selCard(category === c.name)}>
                   <div style={{ fontSize: 22, marginBottom: 5 }}>{c.emoji}</div>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: category === c.name ? 'var(--indigo-lt)' : 'var(--text2)' }}>
-                    {c.name}
-                  </div>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: category === c.name ? 'var(--indigo-lt)' : 'var(--text2)' }}>{c.name}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-              Stake amount
-            </div>
+            {/* STAKE */}
+            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Stake amount</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
               {STAKES.map(s => (
                 <div key={s.naira} onClick={() => setStakeNaira(s.naira)} style={selCard(stakeNaira === s.naira)}>
@@ -197,21 +188,22 @@ export default function Lobby() {
                     ₦{s.naira.toLocaleString()}
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--display)' }}>
-                    win ₦{Math.round(s.naira * actualPlayers * 0.9).toLocaleString()}
+                    win ₦{(s.naira * (mode === '1v1' ? 2 : playerCount) * 0.9).toLocaleString()}
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* GROUP SIZE */}
             {mode === 'group' && (
               <>
                 <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
                   Players per room
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
-                  {PLAYER_SIZES.map(p => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 24 }}>
+                  {PLAYER_SIZES.filter(p => p.value > 2).map(p => (
                     <div key={p.value} onClick={() => setPlayerCount(p.value)} style={selCard(playerCount === p.value)}>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 20, fontWeight: 800, color: playerCount === p.value ? 'var(--gold)' : 'var(--text)', marginBottom: 2 }}>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 16, fontWeight: 800, color: playerCount === p.value ? 'var(--gold)' : 'var(--text)', marginBottom: 2 }}>
                         {p.label}
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--muted)' }}>players</div>
@@ -224,24 +216,33 @@ export default function Lobby() {
 
           {/* STICKY FOOTER */}
           <div style={{
-            position: 'fixed', bottom: 64, left: 0, right: 0,
-            padding: '14px 20px',
+            position: 'sticky', bottom: 0,
+            padding: '14px 20px 20px',
             background: 'rgba(8,8,16,0.97)',
             backdropFilter: 'blur(16px)',
             borderTop: '1px solid var(--line2)',
           }}>
+            {/* MATCH SUMMARY */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(4,1fr)',
-              background: 'var(--surface)', border: '1px solid var(--line2)',
-              borderRadius: 10, overflow: 'hidden', marginBottom: 12,
+              background: 'var(--surface)',
+              border: '1px solid var(--line2)',
+              borderRadius: 10, overflow: 'hidden',
+              marginBottom: 12,
             }}>
               {[
-                { l: 'Game',  v: category.split(' ')[0]              },
-                { l: 'Stake', v: `₦${stakeNaira.toLocaleString()}`,  c: 'var(--gold)'   },
-                { l: 'Prize', v: `₦${prize.toLocaleString()}`,        c: 'var(--teal)'   },
-                { l: 'Cut',   v: '10%',                               c: 'var(--muted2)' },
+                { l: 'Game',    v: category.split(' ')[0]                          },
+                { l: 'Stake',   v: `₦${stakeNaira.toLocaleString()}`,  c: 'var(--gold)'      },
+                { l: 'Prize',   v: `₦${prize.toLocaleString()}`,        c: 'var(--teal)'      },
+                { l: 'Cut',     v: '10%',                                c: 'var(--muted2)'    },
               ].map((item, i) => (
-                <div key={i} style={{ textAlign: 'center', padding: '10px 4px', borderRight: i < 3 ? '1px solid var(--line2)' : 'none' }}>
+                <div
+                  key={i}
+                  style={{
+                    textAlign: 'center', padding: '10px 4px',
+                    borderRight: i < 3 ? '1px solid var(--line2)' : 'none',
+                  }}
+                >
                   <div style={{ fontFamily: 'var(--display)', fontSize: 9, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                     {item.l}
                   </div>
@@ -262,9 +263,7 @@ export default function Lobby() {
             )}
 
             <Button variant="primary" full size="lg" loading={loading} onClick={findMatch}>
-              {mode === 'group'
-                ? `Find group — ${playerCount} players`
-                : 'Find opponent'}
+              {mode === 'group' ? `Find group — ${playerCount} players` : 'Find opponent'}
             </Button>
           </div>
         </>
