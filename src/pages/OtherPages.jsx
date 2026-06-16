@@ -57,7 +57,7 @@ export function Referral() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Button variant="primary" full onClick={() => { navigator.clipboard?.writeText(`Join me on QuizArena! Use code ${user?.referralCode} and get 50 bonus coins. https://quizarena.com/register?ref=${user?.referralCode}`); toast.success('Link copied!') }}>
+            <Button variant="primary" full onClick={() => { navigator.clipboard?.writeText(`Join me on BrainBattle! Use code ${user?.referralCode} and get 50 bonus coins. https://quizarena.com/register?ref=${user?.referralCode}`); toast.success('Link copied!') }}>
               Share link
             </Button>
             <Button variant="ghost" full onClick={copy}>Copy code</Button>
@@ -73,7 +73,7 @@ export function Referral() {
           <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>How it works</div>
           {[
             { n: 1, t: 'Share your code',       d: 'Send your link to friends via WhatsApp, Instagram or SMS' },
-            { n: 2, t: 'Friend signs up',        d: 'They create a QuizArena account using your referral code' },
+            { n: 2, t: 'Friend signs up',        d: 'They create a BrainBattle account using your referral code' },
             { n: 3, t: 'Friend makes a deposit', d: 'They get 50 bonus coins. You get 100 coins instantly.'    },
             { n: 4, t: 'No limit on referrals',  d: 'Refer 100 friends = 10,000 coins. Coins win you more cash.' },
           ].map(step => (
@@ -292,9 +292,7 @@ export function Landing() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* TOPBAR */}
       <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
-        <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>
-          Quiz<em style={{ color: 'var(--blue)', fontStyle: 'normal' }}>Arena</em>
-        </span>
+        <img src="/logo.png" alt="BrainBattle" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log in</Button>
           <Button variant="primary" size="sm" onClick={() => navigate('/register')}>Sign up</Button>
@@ -303,6 +301,20 @@ export function Landing() {
 
       {/* HERO */}
       <div style={{ padding: '48px 20px 40px', borderBottom: '1px solid var(--line)' }}>
+        {/* BIG LOGO - visible in hero on desktop */}
+        <style>{`
+          .hero-logo { display: none; }
+          @media (min-width: 768px) {
+            .hero-logo { display: block; margin-bottom: 28px; }
+            .hero-logo img { height: 72px; width: auto; }
+          }
+          @media (min-width: 1024px) {
+            .hero-logo img { height: 96px; }
+          }
+        `}</style>
+        <div className="hero-logo">
+          <img src="/logo.png" alt="BrainBattle" />
+        </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 4, background: 'var(--blue-dim)', border: '1px solid var(--blue-mid)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 16 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', animation: 'blink 1.4s ease infinite', display: 'inline-block' }} />
           Live now
