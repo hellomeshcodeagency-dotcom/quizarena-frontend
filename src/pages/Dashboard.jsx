@@ -103,7 +103,11 @@ export default function Dashboard() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'var(--display)', fontSize: 16, fontWeight: 800, color: '#fff',
               boxShadow: '0 0 20px var(--indigo-glow)',
-            }}>
+              cursor: 'pointer',
+            }}
+            onClick={() => navigate('/profile')}
+            title="View profile"
+            >
               {user?.avatarInitials || user?.username?.substring(0,2).toUpperCase()}
             </div>
           </div>
