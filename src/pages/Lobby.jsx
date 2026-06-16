@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { gameAPI } from '../services/api'
 import useAuthStore from '../context/authStore'
-import { Button, Brand, WalletChip, Alert } from '../components/ui'
+import { Button, WalletChip, Alert, Tag } from '../components/ui'
 import DepositModal from '../components/game/DepositModal'
 
 const CATEGORIES = [
@@ -25,29 +25,32 @@ const STAKES = [
 ]
 
 const PLAYER_SIZES = [
-  { label: '1v1', value: 2 },
   { label: '10',  value: 10 },
   { label: '20',  value: 20 },
   { label: '50',  value: 50 },
 ]
 
-const MODES = ['1v1', 'group', 'practice']
+const MODES = [
+  { id: '1v1',      label: '1 vs 1'   },
+  { id: 'group',    label: 'Group'    },
+  { id: 'practice', label: 'Practice' },
+]
 
 export default function Lobby() {
-  const navigate   = useNavigate()
-  const location   = useLocation()
-  const user       = useAuthStore(s => s.user)
+  const navigate      = useNavigate()
+  const location      = useLocation()
+  const user          = useAuthStore(s => s.user)
 
-  const [mode,        setMode]        = useState('1v1')
+  const [mode,        setMode]        = useState(location.state?.mode === 'practice' ? 'practice' : '1v1')
   const [category,    setCategory]    = useState(location.state?.category || 'Sports')
   const [stakeNaira,  setStakeNaira]  = useState(500)
-  const [playerCount, setPlayerCount] = useState(2)
+  const [playerCount, setPlayerCount] = useState(10)
   const [loading,     setLoading]     = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
 
-  const balanceNaira = (user?.balance || 0) / 100
-  const prizeNaira   = stakeNaira * 2 * 0.9
-  const platformFee  = stakeNaira * 0.1
+  const balanceNaira  = (user?.balance || 0) / 100
+  const actualPlayers = mode === '1v1' ? 2 : playerCount
+  const prize         = Math.round(stakeNaira * actualPlayers * 0.9)
 
   const findMatch = async () => {
     if (balanceNaira < stakeNaira) {
@@ -57,9 +60,15 @@ export default function Lobby() {
     }
     setLoading(true)
     try {
-      const { data } = await gameAPI.findMatch({ category, stakeNaira, playerCount })
+      const { data } = await gameAPI.findMatch({
+        category,
+        stakeNaira,
+        playerCount: actualPlayers,
+      })
       toast.success('Match found!')
-      navigate(`/game/${data.roomId}`, { state: { stakeNaira, category, playerCount } })
+      navigate(`/game/${data.roomId}`, {
+        state: { stakeNaira, category, playerCount: actualPlayers }
+      })
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to find match')
     } finally {
@@ -67,135 +76,145 @@ export default function Lobby() {
     }
   }
 
-  const startPractice = async () => {
-    setLoading(true)
-    try {
-      navigate('/practice')
-    } finally {
-      setLoading(false)
-    }
+  const startPractice = () => {
+    navigate(`/game/practice-${Date.now()}`, {
+      state: { category, stakeNaira: 0, playerCount: 1, isPractice: true }
+    })
   }
+
+  const selCard = (active) => ({
+    background: active ? 'var(--indigo-dim)' : 'var(--surface2)',
+    border: `1px solid ${active ? 'var(--indigo)' : 'var(--line2)'}`,
+    borderRadius: 'var(--r)',
+    padding: '12px 8px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    transform: active ? 'scale(1.03)' : 'none',
+    boxShadow: active ? '0 0 12px var(--indigo-dim)' : 'none',
+  })
 
   return (
     <>
       <div className="topbar">
-        <div className="flex gap-8">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="back-btn" onClick={() => navigate('/dashboard')}>←</button>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Game lobby</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>Configure your match</div>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 700 }}>
+              Quiz Lobby
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted2)' }}>Set up your match</div>
           </div>
         </div>
         <WalletChip balance={user?.balance || 0} onClick={() => setShowDeposit(true)} />
       </div>
 
       {/* MODE TABS */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--line2)', background: 'var(--surface)' }}>
         {MODES.map(m => (
           <button
-            key={m}
-            onClick={() => { setMode(m); if (m !== 'group') setPlayerCount(2) }}
+            key={m.id}
+            onClick={() => {
+              setMode(m.id)
+              if (m.id === 'group') setPlayerCount(10)
+            }}
             style={{
-              flex: 1, height: 44, borderBottom: `2px solid ${mode === m ? 'var(--blue)' : 'transparent'}`,
-              color: mode === m ? 'var(--blue)' : 'var(--muted)',
-              fontWeight: 700, fontSize: 13, textTransform: 'capitalize',
-              background: 'none', cursor: 'pointer', transition: 'all .15s',
+              flex: 1, height: 46,
+              borderBottom: `2px solid ${mode === m.id ? 'var(--indigo)' : 'transparent'}`,
+              color: mode === m.id ? 'var(--indigo-lt)' : 'var(--muted2)',
+              fontFamily: 'var(--display)', fontWeight: 700, fontSize: 13,
+              background: 'none', cursor: 'pointer', transition: 'all 0.2s',
             }}
           >
-            {m === '1v1' ? '1 vs 1' : m.charAt(0).toUpperCase() + m.slice(1)}
+            {m.label}
           </button>
         ))}
       </div>
 
-      {mode === 'practice' ? (
-        <div style={{ padding: 20 }}>
-          <Alert variant="blue" title="Practice mode">
-            No entry fee. Play to improve your skills. You can play 5 free practice games per day.
-            {user?.is_vip ? ' VIP members get unlimited practice.' : ''}
-          </Alert>
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Choose category</div>
-            <div className="grid3">
-              {CATEGORIES.map(c => (
-                <div
-                  key={c.name}
-                  onClick={() => setCategory(c.name)}
-                  style={{
-                    background: category === c.name ? 'var(--blue-dim)' : 'var(--surface)',
-                    border: `1px solid ${category === c.name ? 'var(--blue-mid)' : 'var(--line)'}`,
-                    borderRadius: 'var(--r)', padding: '12px 8px', textAlign: 'center', cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ fontSize: 22, marginBottom: 5 }}>{c.emoji}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted2)' }}>{c.name}</div>
-                </div>
-              ))}
+      {/* PRACTICE */}
+      {mode === 'practice' && (
+        <div style={{ padding: 20, paddingBottom: 100 }}>
+          <div style={{
+            background: 'var(--indigo-dim)', border: '1px solid var(--indigo-mid)',
+            borderRadius: 12, padding: '14px 16px', marginBottom: 24,
+          }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 13, fontWeight: 700, color: 'var(--indigo-lt)', marginBottom: 4 }}>
+              Practice mode — no stake required
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+              Play solo against the clock. No entry fee, no prize money.
+              Free users get 5 sessions per day.
+              {user?.is_vip ? ' VIP members get unlimited practice.' : ''}
             </div>
           </div>
-          <Button variant="primary" full size="lg" style={{ marginTop: 20 }} onClick={() => navigate('/practice', { state: { category } })}>
-            Start practice
+
+          <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 14 }}>
+            Choose category
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 28 }}>
+            {CATEGORIES.map(c => (
+              <div key={c.name} onClick={() => setCategory(c.name)} style={selCard(category === c.name)}>
+                <div style={{ fontSize: 24, marginBottom: 6 }}>{c.emoji}</div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: 'var(--text2)' }}>
+                  {c.name}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="primary" full size="lg" onClick={startPractice}>
+            Start practice — {category}
           </Button>
         </div>
-      ) : (
+      )}
+
+      {/* 1v1 / GROUP */}
+      {mode !== 'practice' && (
         <>
-          <div style={{ padding: '20px 20px 0' }}>
-            {/* CATEGORY */}
-            <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Category</div>
-            <div className="grid3" style={{ marginBottom: 20 }}>
+          <div style={{ padding: '20px 20px 120px' }}>
+
+            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
+              Category
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
               {CATEGORIES.map(c => (
-                <div
-                  key={c.name}
-                  onClick={() => setCategory(c.name)}
-                  style={{
-                    background: category === c.name ? 'var(--blue-dim)' : 'var(--surface)',
-                    border: `1px solid ${category === c.name ? 'var(--blue-mid)' : 'var(--line)'}`,
-                    borderRadius: 'var(--r)', padding: '12px 8px', textAlign: 'center', cursor: 'pointer',
-                  }}
-                >
+                <div key={c.name} onClick={() => setCategory(c.name)} style={selCard(category === c.name)}>
                   <div style={{ fontSize: 22, marginBottom: 5 }}>{c.emoji}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted2)' }}>{c.name}</div>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 11, fontWeight: 700, color: category === c.name ? 'var(--indigo-lt)' : 'var(--text2)' }}>
+                    {c.name}
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* STAKE */}
-            <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Stake amount</div>
-            <div className="grid3" style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
+              Stake amount
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
               {STAKES.map(s => (
-                <div
-                  key={s.naira}
-                  onClick={() => setStakeNaira(s.naira)}
-                  style={{
-                    background: stakeNaira === s.naira ? 'var(--blue-dim)' : 'var(--surface)',
-                    border: `1px solid ${stakeNaira === s.naira ? 'var(--blue-mid)' : 'var(--line)'}`,
-                    borderRadius: 'var(--r)', padding: '12px 8px', textAlign: 'center', cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600, color: 'var(--amber)', marginBottom: 2 }}>
+                <div key={s.naira} onClick={() => setStakeNaira(s.naira)} style={selCard(stakeNaira === s.naira)}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 700, color: stakeNaira === s.naira ? 'var(--gold)' : 'var(--text)', marginBottom: 2 }}>
                     ₦{s.naira.toLocaleString()}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>win ₦{s.win.toLocaleString()}</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--display)' }}>
+                    win ₦{Math.round(s.naira * actualPlayers * 0.9).toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* PLAYER COUNT — only for group */}
             {mode === 'group' && (
               <>
-                <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Players per room</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 20 }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
+                  Players per room
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
                   {PLAYER_SIZES.map(p => (
-                    <div
-                      key={p.value}
-                      onClick={() => setPlayerCount(p.value)}
-                      style={{
-                        background: playerCount === p.value ? 'var(--blue-dim)' : 'var(--surface)',
-                        border: `1px solid ${playerCount === p.value ? 'var(--blue-mid)' : 'var(--line)'}`,
-                        borderRadius: 'var(--r)', padding: '11px 6px', textAlign: 'center', cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600, color: 'var(--amber)' }}>{p.label}</div>
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.value === 2 ? 'players' : 'players'}</div>
+                    <div key={p.value} onClick={() => setPlayerCount(p.value)} style={selCard(playerCount === p.value)}>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 20, fontWeight: 800, color: playerCount === p.value ? 'var(--gold)' : 'var(--text)', marginBottom: 2 }}>
+                        {p.label}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>players</div>
                     </div>
                   ))}
                 </div>
@@ -203,38 +222,49 @@ export default function Lobby() {
             )}
           </div>
 
-          {/* FOOTER */}
-          <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line)', background: 'var(--bg)', position: 'sticky', bottom: 0 }}>
-            {/* SUMMARY */}
+          {/* STICKY FOOTER */}
+          <div style={{
+            position: 'fixed', bottom: 64, left: 0, right: 0,
+            padding: '14px 20px',
+            background: 'rgba(8,8,16,0.97)',
+            backdropFilter: 'blur(16px)',
+            borderTop: '1px solid var(--line2)',
+          }}>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(4,1fr)',
-              background: 'var(--surface)', border: '1px solid var(--line)',
-              borderRadius: 'var(--r)', padding: '10px 0', marginBottom: 12,
+              background: 'var(--surface)', border: '1px solid var(--line2)',
+              borderRadius: 10, overflow: 'hidden', marginBottom: 12,
             }}>
               {[
-                { l: 'Category', v: category.split(' ')[0] },
-                { l: 'Stake',    v: '₦' + stakeNaira.toLocaleString(), color: 'var(--amber)' },
-                { l: 'Prize',    v: '₦' + prizeNaira.toLocaleString(), color: 'var(--green)' },
-                { l: 'Fee',      v: '10%', color: 'var(--muted)' },
+                { l: 'Game',  v: category.split(' ')[0]              },
+                { l: 'Stake', v: `₦${stakeNaira.toLocaleString()}`,  c: 'var(--gold)'   },
+                { l: 'Prize', v: `₦${prize.toLocaleString()}`,        c: 'var(--teal)'   },
+                { l: 'Cut',   v: '10%',                               c: 'var(--muted2)' },
               ].map((item, i) => (
-                <div key={i} style={{ textAlign: 'center', borderRight: i < 3 ? '1px solid var(--line)' : 'none', padding: '0 4px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{item.l}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 600, color: item.color || 'var(--text)' }}>{item.v}</div>
+                <div key={i} style={{ textAlign: 'center', padding: '10px 4px', borderRight: i < 3 ? '1px solid var(--line2)' : 'none' }}>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 9, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                    {item.l}
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: item.c || 'var(--text)' }}>
+                    {item.v}
+                  </div>
                 </div>
               ))}
             </div>
 
             {balanceNaira < stakeNaira && (
-              <div style={{ marginBottom: 10 }}>
-                <Alert variant="red">
-                  Insufficient balance. You need ₦{stakeNaira.toLocaleString()} but have ₦{balanceNaira.toLocaleString()}.
-                  <span style={{ color: 'var(--blue)', cursor: 'pointer', marginLeft: 4 }} onClick={() => setShowDeposit(true)}>Deposit now</span>
-                </Alert>
+              <div style={{ background: 'var(--red-dim)', border: '1px solid var(--red-mid)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Need ₦{(stakeNaira - balanceNaira).toLocaleString()} more</span>
+                <span style={{ fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setShowDeposit(true)}>
+                  Deposit
+                </span>
               </div>
             )}
 
             <Button variant="primary" full size="lg" loading={loading} onClick={findMatch}>
-              Find match
+              {mode === 'group'
+                ? `Find group — ${playerCount} players`
+                : 'Find opponent'}
             </Button>
           </div>
         </>
