@@ -3,6 +3,11 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { getSocket } from '../../services/socket'
 import useAuthStore from '../../context/authStore'
 import { Button } from '../../components/ui'
+import DifficultyPicker from '../../components/game/DifficultyPicker'
+
+// AI strength by difficulty
+const AI_DEPTH = { easy: 0, medium: 1, hard: 2 }
+const AI_DELAY_MS = { easy: 1200, medium: 700, hard: 300 }
 
 const PIECE_SYMBOLS = {
   K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙',
@@ -116,13 +121,15 @@ export default function Chess() {
   const { stakeNaira = 0, isPractice } = location.state || {}
   const isPrac = isPractice || roomId?.startsWith('practice')
 
+  const [difficulty,  setDifficulty]  = useState(null)
+  const [phase,       setPhase]       = useState(isPrac ? 'select-difficulty' : 'playing')
   // Board state
   const [board,      setBoard]      = useState(INITIAL_BOARD.map(r=>[...r]))
   const [selected,   setSelected]   = useState(null)
   const [legalMoves, setLegalMoves] = useState([])
-  const [isMyTurn,   setIsMyTurn]   = useState(true) // white always starts in practice
+  const [isMyTurn,   setIsMyTurn]   = useState(true)
   const [lastMove,   setLastMove]   = useState(null)
-  const [status,     setStatus]     = useState(isPrac ? 'playing' : 'waiting')
+  const [status,     setStatus]     = useState(isPrac ? 'idle' : 'waiting')
   const [result,     setResult]     = useState(null)
   const [moveCount,  setMoveCount]  = useState(0)
   const [aiThinking, setAiThinking] = useState(false)
@@ -290,6 +297,21 @@ export default function Chess() {
 
   const toDisplayPos = (row, col) =>
     displayColor === 'black' ? [7-row, 7-col] : [row, col]
+
+  // ── DIFFICULTY SELECT ──────────────────────────────────
+  if (isPrac && phase === 'select-difficulty') {
+    return (
+      <DifficultyPicker
+        gameName="Chess"
+        onSelect={(diff) => {
+          setDifficulty(diff)
+          setPhase('playing')
+          setStatus('playing')
+        }}
+        onBack={() => navigate('/games')}
+      />
+    )
+  }
 
   // ── WAITING ─────────────────────────────────────────────
   if (!isPrac && status === 'waiting') {
