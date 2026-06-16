@@ -51,7 +51,7 @@ export default function Login() {
           <Input label="Password" type="password" placeholder="Your password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required />
 
           <div style={{ textAlign: 'right', marginBottom: 24 }}>
-            <span style={{ fontSize: 13, color: 'var(--indigo-lt)', cursor: 'pointer', fontFamily: 'var(--display)', fontWeight: 600 }}>Forgot password?</span>
+            <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--indigo-lt)', cursor: 'pointer', fontFamily: 'var(--display)', fontWeight: 600 }}>Forgot password?</Link>
           </div>
 
           <Button type="submit" variant="primary" full size="lg" loading={loading}>
