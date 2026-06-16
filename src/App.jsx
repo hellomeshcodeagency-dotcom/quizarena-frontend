@@ -6,6 +6,9 @@ import './styles/global.css'
 
 // Pages
 import { Landing, Referral, Coins, Practice, NotFound } from './pages/OtherPages'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword  from './pages/ResetPassword'
+import Profile        from './pages/Profile'
 import Login       from './pages/Login'
 import Register    from './pages/Register'
 import Dashboard   from './pages/Dashboard'
@@ -67,7 +70,9 @@ export default function App() {
         {/* Public */}
         <Route path="/"         element={<Guest><Landing /></Guest>} />
         <Route path="/login"    element={<Guest><Login /></Guest>} />
-        <Route path="/register" element={<Guest><Register /></Guest>} />
+        <Route path="/register"        element={<Guest><Register /></Guest>} />
+        <Route path="/forgot-password"   element={<ForgotPassword />} />
+        <Route path="/reset-password"    element={<ResetPassword />} />
 
         {/* Protected with nav */}
         <Route element={<Protected><AppLayout /></Protected>}>
@@ -81,6 +86,7 @@ export default function App() {
           <Route path="/referral"    element={<Referral />} />
           <Route path="/coins"       element={<Coins />} />
           <Route path="/practice"    element={<Practice />} />
+          <Route path="/profile"     element={<Profile />} />
         </Route>
 
         {/* Game screens — no nav */}
