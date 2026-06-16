@@ -57,7 +57,7 @@ export function Referral() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-            <Button variant="primary" full onClick={() => { navigator.clipboard?.writeText(`Join me on BrainBattle! Use code ${user?.referralCode} and get 50 bonus coins. https://quizarena.com/register?ref=${user?.referralCode}`); toast.success('Link copied!') }}>
+            <Button variant="primary" full onClick={() => { navigator.clipboard?.writeText(`Join me on BrainBattle! Use code ${user?.referralCode} and get 50 bonus coins. https://brainbattles.netlify.app/register?ref=${user?.referralCode}`); toast.success('Link copied!') }}>
               Share link
             </Button>
             <Button variant="ghost" full onClick={copy}>Copy code</Button>
