@@ -2,10 +2,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 const NAV_ITEMS = [
   { path: '/dashboard',   icon: '⌂',  label: 'Home'    },
-  { path: '/lobby',       icon: '▶',  label: 'Play'    },
+  { path: '/games',       icon: '🎮', label: 'Games'   },
   { path: '/tournaments', icon: '🏆', label: 'Compete' },
   { path: '/leaderboard', icon: '≡',  label: 'Ranks'   },
-  { path: '/vip',         icon: '◈',  label: 'VIP'     },
+  { path: '/wallet',      icon: '₦',  label: 'Wallet'  },
 ]
 
 export default function AppLayout() {
