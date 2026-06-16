@@ -44,11 +44,13 @@ export function Input({ label, hint, error, className = '', ...props }) {
 }
 
 // ── Brand ─────────────────────────────────────────────────
-export function Brand({ size = 20 }) {
+export function Brand() {
   return (
-    <span className="topbar-brand" style={{ fontSize: size }}>
-      Quiz<em>Arena</em>
-    </span>
+    <img
+      src="/logo.png"
+      alt="BrainBattle"
+      className="topbar-logo"
+    />
   )
 }
 
